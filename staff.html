@@ -1,444 +1,150 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FREEDMILL STAFF</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-<script src="config.js"></script>
-
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#f2f4f7;color:#243447;font-family:Arial,sans-serif}
-header{background:#173b5e;color:white;padding:20px;text-align:center}
-main{max-width:850px;margin:24px auto;padding:15px}
-.card{background:white;border-radius:12px;padding:22px;margin-bottom:18px;box-shadow:0 2px 12px #0000000c}
-h2{font-size:19px;color:#173b5e;margin-top:0}
-input,select{width:100%;padding:11px;border:1px solid #ccd3dc;border-radius:7px;font-size:15px;margin:6px 0 14px}
-label{font-size:14px;font-weight:bold}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
-button{border:0;border-radius:8px;padding:13px 20px;background:#173b5e;color:white;font-size:15px;cursor:pointer}
-button:disabled{opacity:.5}
-.secondary{background:#687789}
-#message{margin:12px 0;white-space:pre-wrap}
-#app{display:none}
-#label{display:none}
-#qrcode{margin:15px auto;width:150px}
-.labelbox{background:white;color:#111;padding:20px;border:1px solid #aaa;max-width:700px;margin:auto}
-.labelbox h2{text-align:center;color:#111}
-.labelrow{padding:7px 0;border-bottom:1px solid #ddd}
-
-@media(max-width:600px){
-  .grid{grid-template-columns:1fr}
-}
-
-@media print{
-  body{background:white}
-  body *{visibility:hidden}
-  #label,#label *{visibility:visible}
-  #label{display:block!important;position:absolute;left:0;top:0;width:100%}
-  .labelbox{border:0;max-width:none}
-}
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>พนักงาน | FREEDMILL</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+<header class="hero" style="padding-bottom:64px"><div class="wrap">
+<div class="brand"><span>FREEDMILL พนักงาน</span><button class="ghost" id="lo" hidden>ออกจากระบบ</button></div>
+</div></header>
+<main><div class="wrap">
 
-<header>
-<h1>FREEDMILL TRACKING</h1>
-<div>STAFF MANAGEMENT</div>
-</header>
-
-<main>
-
-<!-- LOGIN -->
 <section class="card" id="login">
-<h2>เข้าสู่ระบบพนักงาน</h2>
-
-<label>อีเมล</label>
-<input id="email" type="email" placeholder="Staff email">
-
-<label>รหัสผ่าน</label>
-<input id="password" type="password" placeholder="Password">
-
-<button id="loginBtn" onclick="loginStaff()">เข้าสู่ระบบ</button>
-
-<div id="loginMsg"></div>
-</section>
-
-<!-- STAFF APP -->
-<section id="app">
-
-<div class="card">
-<h2>สร้างรายการจัดส่งใหม่</h2>
-
-<form id="shipmentForm">
-
-<div class="grid">
-
-<div>
-<label>เลขที่เอกสาร</label>
-<input name="invoice_no" required>
-</div>
-
-<div>
-<label>ผู้ส่ง</label>
-<input name="shipper" required>
-</div>
-
-<div>
-<label>ผู้รับ</label>
-<input name="consignee" required>
-</div>
-
-<div>
-<label>กำหนดส่ง (ETA)</label>
-<input name="eta" placeholder="เช่น 30/10/2026">
-</div>
-
-<div>
-<label>เลขที่หีบห่อ</label>
-<input name="pkg_no">
-</div>
-
-<div>
-<label>เลขที่รายการ</label>
-<input name="list_no">
-</div>
-
-<div>
-<label>รหัสสินค้า</label>
-<input name="product_code">
-</div>
-
-<div>
-<label>แบรนด์</label>
-<input name="brand">
-</div>
-
-<div>
-<label>สี</label>
-<input name="color">
-</div>
-
-<div>
-<label>จำนวนสินค้า</label>
-<input name="qty">
-</div>
-
-<div>
-<label>จำนวนหีบห่อ</label>
-<input name="line_pkg">
-</div>
-
-<div>
-<label>น้ำหนักสุทธิ (NW)</label>
-<input name="nw" type="number" step="any">
-</div>
-
-<div>
-<label>น้ำหนักรวม (GW)</label>
-<input name="gw" type="number" step="any">
-</div>
-
-<div>
-<label>สถานที่ปลายทาง (POD)</label>
-<input name="pod">
-</div>
-
-<div>
-<label>เลขตู้สินค้า</label>
-<input name="container_no">
-</div>
-
-<div>
-<label>เลขซีล</label>
-<input name="seal_no">
-</div>
-
-</div>
-
-<label>รายละเอียดสินค้า</label>
-<input name="description" required>
-
-<label>สถานะเริ่มต้น</label>
-<select name="status">
-<option value="เตรียมจัดส่ง">เตรียมจัดส่ง</option>
-<option value="กำลังจัดส่ง">กำลังจัดส่ง</option>
-</select>
-
-<label>สถานที่เริ่มต้น</label>
-<input name="event_place" placeholder="เช่น อุดมชัยกู๊ดโฮม สมุทรสงคราม">
-
-<button id="saveBtn" type="submit">บันทึกรายการและสร้าง QR</button>
-
+<h2>เข้าสู่ระบบ</h2>
+<form id="lf" class="fg">
+<label class="w">อีเมล<input id="em" type="email" required autocomplete="username"></label>
+<label class="w">รหัสผ่าน<input id="pw" type="password" required autocomplete="current-password"></label>
+<div class="w"><button>เข้าสู่ระบบ</button><span class="msg" id="lerr" style="margin-left:10px"></span></div>
 </form>
-
-<div id="message"></div>
-</div>
-
-<!-- SHIPPING LABEL -->
-<section class="card" id="label">
-
-<div class="labelbox">
-
-<h2>FREEDMILL TRACKING</h2>
-
-<div class="labelrow"><b>INVOICE NO.:</b> <span id="l_invoice"></span></div>
-<div class="labelrow"><b>SHIPPER:</b> <span id="l_shipper"></span></div>
-<div class="labelrow"><b>CONSIGNEE:</b> <span id="l_consignee"></span></div>
-<div class="labelrow"><b>DESTINATION:</b> <span id="l_pod"></span></div>
-<div class="labelrow"><b>PACKAGE NO.:</b> <span id="l_pkg"></span></div>
-<div class="labelrow"><b>LIST NO.:</b> <span id="l_list"></span></div>
-<div class="labelrow"><b>DESCRIPTION:</b> <span id="l_description"></span></div>
-<div class="labelrow"><b>PRODUCT CODE:</b> <span id="l_product"></span></div>
-<div class="labelrow"><b>BRAND / COLOR:</b> <span id="l_brand"></span> / <span id="l_color"></span></div>
-<div class="labelrow"><b>QTY:</b> <span id="l_qty"></span> &nbsp; <b>PACKAGE:</b> <span id="l_line"></span></div>
-<div class="labelrow"><b>NW:</b> <span id="l_nw"></span> &nbsp; <b>GW:</b> <span id="l_gw"></span></div>
-
-<div id="qrcode"></div>
-
-<p style="text-align:center">SCAN QR CODE TO TRACK SHIPMENT</p>
-
-<div style="text-align:center;font-size:12px" id="l_code"></div>
-
-</div>
-
-<div style="text-align:center;margin-top:15px">
-<button onclick="window.print()">พิมพ์ใบปะหน้า</button>
-</div>
-
 </section>
 
-<button class="secondary" onclick="logoutStaff()">ออกจากระบบ</button>
-
+<div id="app" hidden>
+<section class="card">
+<div class="hd"><h2>สแกน QR เพื่ออัปเดตสถานะ</h2><button id="scan">เปิดกล้องสแกน</button></div>
+<div id="reader" hidden></div>
+<form id="cf" class="fg" style="margin-top:12px"><label class="w">หรือพิมพ์รหัส 12 ตัวอักษร<input id="code" autocomplete="off"></label><div class="w"><button class="ghost">ค้นหารหัส</button></div></form>
+<div class="msg" id="msg"></div>
 </section>
 
-</main>
+<div id="cur"></div>
 
+<section class="card" style="margin-top:14px">
+<div class="hd"><h2>สร้างรายการใหม่</h2><button class="ghost" id="tg">แสดง/ซ่อนฟอร์ม</button></div>
+<form id="nf" class="fg" hidden></form>
+</section>
+
+<section class="card" style="margin-top:14px">
+<h2>รายการล่าสุด</h2><div id="list"></div>
+</section>
+</div>
+
+</div></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 <script>
+const $ = id => document.getElementById(id);
+let cur = null, sc = null;
+const say = t => { $("msg").textContent = t || ""; };
 
-// CONNECT SUPABASE
-const db = window.supabase.createClient(APP.url, APP.key);
+// ฟอร์มสร้างรายการ: [คอลัมน์, ชื่อช่อง, ค่าเริ่มต้น, ชนิด]
+const FIELDS = [
+  ["invoice_no", "Invoice No. *", "", "text", 1],
+  ["description", "รายการสินค้า (Description) *", "", "text", 1],
+  ["product_code", "รหัสสินค้า"], ["brand", "แบรนด์"], ["color", "สี / รุ่น"],
+  ["qty", "ปริมาณ เช่น 701.28 SQ.M"], ["line_pkg", "Line PKG", "1 of 1"],
+  ["nw", "N.W. (กก.)", "", "number"], ["gw", "G.W. (กก.)", "", "number"],
+  ["pkg_no", "Package No.", "1 / 1"], ["list_no", "List No.", "1 / 1"],
+  ["pod", "POD ท่าปลายทาง"], ["container_no", "เลขตู้"], ["seal_no", "เลขซีล"],
+  ["eta", "คาดว่าถึง เช่น 8 พ.ย. 2569"]
+];
+$("nf").innerHTML = FIELDS.map(f => `<label ${f[4] ? 'class="w"' : ""}>${f[1]}<input name="${f[0]}" value="${f[2] || ""}" type="${f[3] || "text"}" ${f[3] === "number" ? 'step="0.01"' : ""} ${String(f[1]).includes("*") ? "required" : ""}></label>`).join("") +
+  `<label class="w">ผู้ส่ง (Shipper)<textarea name="shipper" rows="2">BIG GOLD AGRO CO., LTD.\nBANGKOK, THAILAND</textarea></label>
+   <label class="w">ผู้รับ (Consignee)<textarea name="consignee" rows="2"></textarea></label>
+   <div class="w"><button>สร้างรายการและใบปะหน้า</button></div>`;
+$("tg").onclick = () => { $("nf").hidden = !$("nf").hidden; };
 
+function gate(on) { $("login").hidden = on; $("app").hidden = !on; $("lo").hidden = !on; if (on) loadList(); }
+(async () => { const { data } = await db.auth.getSession(); gate(!!data.session); })();
 
-// LOGIN
-async function loginStaff(){
-
-  const msg = document.getElementById('loginMsg');
-  const btn = document.getElementById('loginBtn');
-
-  btn.disabled = true;
-  msg.textContent = 'กำลังเข้าสู่ระบบ...';
-
-  try {
-
-    const { error } = await db.auth.signInWithPassword({
-      email: document.getElementById('email').value.trim(),
-      password: document.getElementById('password').value
-    });
-
-    if(error) throw error;
-
-    await showApp();
-
-  } catch(error) {
-
-    msg.textContent = 'เข้าสู่ระบบไม่สำเร็จ: ' + error.message;
-
-  } finally {
-
-    btn.disabled = false;
-
-  }
-}
-
-
-// SHOW STAFF APP
-async function showApp(){
-
-  const { data, error } = await db.auth.getSession();
-
-  if(error){
-    document.getElementById('loginMsg').textContent = error.message;
-    return;
-  }
-
-  if(!data.session) return;
-
-  document.getElementById('login').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-
-}
-
-
-// LOGOUT
-async function logoutStaff(){
-
-  await db.auth.signOut();
-  location.reload();
-
-}
-
-
-// LABEL TEXT
-function setLabel(id,value){
-
-  document.getElementById(id).textContent = value || '-';
-
-}
-
-
-// SAVE SHIPMENT
-document.getElementById('shipmentForm').addEventListener('submit',async function(e){
-
+$("lf").onsubmit = async e => {
   e.preventDefault();
+  const { error } = await db.auth.signInWithPassword({ email: $("em").value, password: $("pw").value });
+  if (error) { $("lerr").textContent = "อีเมลหรือรหัสผ่านไม่ถูกต้อง"; return; }
+  $("lerr").textContent = ""; gate(true);
+};
+$("lo").onclick = async () => { await db.auth.signOut(); cur = null; $("cur").innerHTML = ""; gate(false); };
 
-  const btn = document.getElementById('saveBtn');
-  const msg = document.getElementById('message');
+async function loadList() {
+  const { data, error } = await db.from("shipments").select("id,invoice_no,status,created_at").order("created_at", { ascending: false }).limit(30);
+  if (error) { $("list").innerHTML = `<p class="msg">โหลดรายการไม่ได้: ${esc(error.message)}</p>`; return; }
+  $("list").innerHTML = (data || []).map(s => `<div class="row"><div><b>${esc(s.invoice_no)}</b><small>${esc(s.status)} · ${when(s.created_at)}</small></div><button class="ghost" data-id="${s.id}">เปิด</button></div>`).join("") || `<p class="msg">ยังไม่มีรายการ</p>`;
+}
+$("list").onclick = e => { const id = e.target.dataset.id; if (id) pick("id", id); };
 
-  btn.disabled = true;
-  msg.textContent = 'กำลังบันทึกข้อมูล...';
+async function pick(col, val) {
+  say("กำลังค้นหา…");
+  const { data: s, error } = await db.from("shipments").select("*").eq(col, val).maybeSingle();
+  if (error || !s) { say("ไม่พบรายการนี้"); return; }
+  const { data: ev } = await db.from("shipment_events").select("title,place,created_at").eq("shipment_id", s.id).order("created_at", { ascending: false });
+  s.events = (ev || []).map(e => ({ title: e.title, place: e.place, at: e.created_at }));
+  cur = s; say(""); renderCur();
+  $("cur").scrollIntoView({ behavior: "smooth" });
+}
 
-  let shipmentSaved = false;
+function renderCur() {
+  const s = cur; window.CUR = s;
+  $("cur").innerHTML = `<section class="card" style="margin-top:14px">
+  <div class="top"><div><div class="no">Invoice No. ${esc(s.invoice_no)}</div><div class="status">${esc(s.status)}</div></div></div>
+  <form id="uf" class="fg" style="margin-top:14px">
+  <label>สถานะใหม่<select name="step">${STAGES.map((t, i) => `<option value="${i}" ${i === s.step ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+  <label>สถานที่<input name="place" placeholder="เช่น แหลมฉบัง, ชลบุรี"></label>
+  <label>หมายเหตุ (ไม่บังคับ)<input name="note"></label>
+  <label>คาดว่าถึง (ไม่บังคับ)<input name="eta" value="${esc(s.eta)}"></label>
+  <div class="w"><button>บันทึกสถานะ</button></div></form>
+  <div class="msg" id="umsg"></div></section>
+  <section class="card" style="margin-top:14px"><div class="hd"><h2>ใบปะหน้า</h2><span><button class="ghost" onclick="printCur('a5')">พิมพ์ A5</button> <button class="ghost" onclick="printCur('label')">พิมพ์ 10×15 ซม.</button></span></div><div class="lw">${label(s)}</div></section>
+  <section class="card" style="margin-top:14px"><h2>ประวัติ</h2>${evHtml(s.events)}</section>`;
+  $("uf").onsubmit = async e => {
+    e.preventDefault();
+    const f = new FormData(e.target), step = +f.get("step"), note = (f.get("note") || "").trim();
+    const title = STAGES[step] + (note ? " – " + note : "");
+    const r1 = await db.from("shipment_events").insert({ shipment_id: s.id, title, place: (f.get("place") || "").trim() || null });
+    const r2 = await db.from("shipments").update({ status: STAGES[step], step, eta: (f.get("eta") || "").trim() || null }).eq("id", s.id);
+    if (r1.error || r2.error) { $("umsg").textContent = "บันทึกไม่สำเร็จ: " + (r1.error || r2.error).message; return; }
+    await pick("id", s.id); loadList();
+  };
+}
 
-  try {
+$("nf").onsubmit = async e => {
+  e.preventDefault();
+  const row = {};
+  new FormData(e.target).forEach((v, k) => { v = String(v).trim(); row[k] = v === "" ? null : v; });
+  ["nw", "gw"].forEach(k => { if (row[k] != null) row[k] = Number(row[k]); });
+  const { data, error } = await db.from("shipments").insert(row).select().single();
+  if (error) { say("สร้างรายการไม่สำเร็จ: " + error.message); return; }
+  await db.from("shipment_events").insert({ shipment_id: data.id, title: STAGES[0] });
+  e.target.reset(); e.target.hidden = true; loadList(); pick("id", data.id);
+};
 
-    const f = new FormData(this);
-    const v = name => (f.get(name) || '').trim();
+$("cf").onsubmit = e => { e.preventDefault(); const c = codeFrom($("code").value); if (c) pick("public_code", c); };
 
-    const record = {
-
-      invoice_no: v('invoice_no'),
-      status: v('status'),
-      step: 1,
-      eta: v('eta') || null,
-      shipper: v('shipper'),
-      consignee: v('consignee'),
-      pod: v('pod') || null,
-      pkg_no: v('pkg_no') || null,
-      list_no: v('list_no') || null,
-      description: v('description'),
-      product_code: v('product_code') || null,
-      brand: v('brand') || null,
-      color: v('color') || null,
-      qty: v('qty') || null,
-      line_pkg: v('line_pkg') || null,
-      nw: v('nw') ? Number(v('nw')) : null,
-      gw: v('gw') ? Number(v('gw')) : null,
-      container_no: v('container_no') || null,
-      seal_no: v('seal_no') || null
-
-    };
-
-
-    // SUPABASE GENERATES ID AND PUBLIC CODE
-    const { data, error } = await db
-      .from('shipments')
-      .insert(record)
-      .select('id, public_code')
-      .single();
-
-    if(error) throw error;
-
-    shipmentSaved = true;
-
-    const code = data.public_code;
-
-    if(!code){
-      throw new Error('ไม่พบรหัส public_code ที่ Supabase สร้างให้');
-    }
-
-
-    // SAVE FIRST TRACKING EVENT
-    const place = v('event_place') || 'ไม่ระบุสถานที่';
-
-    const { error: eventError } = await db
-      .from('shipment_events')
-      .insert({
-        shipment_id: data.id,
-        title: 'สร้างรายการจัดส่ง',
-        place: place
-      });
-
-    if(eventError){
-      throw new Error('บันทึกรายการแล้ว แต่ประวัติไม่สำเร็จ: ' + eventError.message);
-    }
-
-
-    // CREATE TRACKING URL
-    const url = new URL(APP.base);
-    url.searchParams.set('t', code);
-
-
-    // FILL SHIPPING LABEL
-    const fields = {
-
-      l_invoice: v('invoice_no'),
-      l_shipper: v('shipper'),
-      l_consignee: v('consignee'),
-      l_pod: v('pod'),
-      l_pkg: v('pkg_no'),
-      l_list: v('list_no'),
-      l_description: v('description'),
-      l_product: v('product_code'),
-      l_brand: v('brand'),
-      l_color: v('color'),
-      l_qty: v('qty'),
-      l_line: v('line_pkg'),
-      l_nw: v('nw'),
-      l_gw: v('gw'),
-      l_code: code
-
-    };
-
-    Object.entries(fields).forEach(([id,value]) => {
-      setLabel(id,value);
-    });
-
-
-    // GENERATE QR CODE
-    document.getElementById('qrcode').innerHTML = '';
-
-    new QRCode(document.getElementById('qrcode'), {
-      text: url.toString(),
-      width: 150,
-      height: 150
-    });
-
-
-    document.getElementById('label').style.display = 'block';
-
-    msg.textContent = 'บันทึกสำเร็จ! สร้าง QR Code เรียบร้อยแล้ว';
-
-    document.getElementById('label').scrollIntoView({
-      behavior: 'smooth'
-    });
-
-    this.reset();
-
-  } catch(error) {
-
-    msg.textContent = shipmentSaved
-      ? 'บันทึกรายการแล้ว แต่ขั้นตอนต่อไปมีปัญหา: ' + error.message
-      : 'เกิดข้อผิดพลาด: ' + error.message;
-
-  } finally {
-
-    btn.disabled = false;
-
-  }
-
-});
-
-
-// CHECK EXISTING LOGIN SESSION
-showApp();
-
+async function stopScan() { if (sc) { try { await sc.stop(); } catch (e) {} sc = null; } $("reader").hidden = true; $("scan").textContent = "เปิดกล้องสแกน"; }
+$("scan").onclick = async () => {
+  if (sc) { stopScan(); return; }
+  $("reader").hidden = false; $("scan").textContent = "ปิดกล้อง";
+  sc = new Html5Qrcode("reader");
+  sc.start({ facingMode: "environment" }, { fps: 10, qrbox: 240 },
+    async text => { await stopScan(); pick("public_code", codeFrom(text)); }, () => {})
+    .catch(() => { stopScan(); say("เปิดกล้องไม่ได้ ตรวจสอบว่าเปิดผ่าน https และอนุญาตกล้องแล้ว"); });
+};
 </script>
-
 </body>
 </html>
