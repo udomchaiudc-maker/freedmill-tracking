@@ -1,0 +1,165 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FREEDMILL TRACKING</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f3f5f8;
+  margin: 0;
+  color: #263445;
+}
+header {
+  background: #173b5e;
+  color: white;
+  padding: 22px;
+  text-align: center;
+}
+main {
+  max-width: 760px;
+  margin: 24px auto;
+  padding: 16px;
+}
+.card {
+  background: white;
+  padding: 20px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px #0000000c;
+}
+h2 { color: #173b5e; font-size: 19px; }
+.item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+.item span:first-child { color: #687789; }
+.item span:last-child {
+  text-align: right;
+  font-weight: bold;
+  overflow-wrap: anywhere;
+}
+.event {
+  border-left: 3px solid #e34b35;
+  padding: 4px 0 16px 16px;
+  margin-left: 5px;
+}
+.muted { color: #788695; font-size: 13px; }
+#message { text-align: center; padding: 30px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>FREEDMILL TRACKING</h1>
+  <div>ระบบติดตามสถานะสินค้า</div>
+</header>
+<main>
+  <div id="message" class="card">กำลังตรวจสอบข้อมูล...</div>
+  <div id="result" hidden></div>
+</main>
+
+<script>
+const message = document.getElementById('message');
+const result = document.getElementById('result');
+
+function safe(value) {
+  return String(value ?? '-').replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;',
+    '"':'&quot;', "'":'&#39;'
+  }[c]));
+}
+
+function row(label, value) {
+  return `<div class="item">
+    <span>${label}</span><span>${safe(value)}</span>
+  </div>`;
+}
+
+function render(data) {
+  message.hidden = true;
+  result.hidden = false;
+
+  result.innerHTML = `
+    <section class="card">
+      <h2>ข้อมูลการจัดส่ง</h2>
+      ${row('เลขที่เอกสาร', data.invoice_no)}
+      ${row('ผู้ส่ง', data.shipper)}
+      ${row('ผู้รับ', data.consignee)}
+      ${row('สถานะ', data.status)}
+      ${row('ขั้นตอน', data.step)}
+      ${row('กำหนดส่ง', data.eta)}
+    </section>
+    <section class="card">
+      <h2>รายละเอียดสินค้า</h2>
+      ${row('รายละเอียด', data.description)}
+      ${row('รหัสสินค้า', data.product_code)}
+      ${row('แบรนด์', data.brand)}
+      ${row('สี', data.color)}
+      ${row('จำนวน', data.qty)}
+      ${row('จำนวนหีบห่อ', data.line_pkg)}
+      ${row('น้ำหนักสุทธิ (NW)', data.nw)}
+      ${row('น้ำหนักรวม (GW)', data.gw)}
+    </section>
+    <section class="card">
+      <h2>ประวัติการเดินทาง</h2>
+      ${
+        Array.isArray(data.events) && data.events.length
+        ? data.events.map(e => `
+          <div class="event">
+            <strong>${safe(e.title)}</strong>
+            <div>${safe(e.place)}</div>
+            <div class="muted">${safe(
+              e.at ? new Date(e.at).toLocaleString('th-TH') : '-'
+            )}</div>
+          </div>
+        `).join('')
+        : '<p class="muted">ยังไม่มีประวัติการเดินทาง</p>'
+      }
+    </section>
+  `;
+}
+
+async function start() {
+  try {
+    if (!window.supabase) throw new Error('โหลด Supabase ไม่สำเร็จ');
+    if (!window.APP?.url || !window.APP?.key) {
+      throw new Error('กรุณาตรวจสอบไฟล์ config.js');
+    }
+
+    const db = window.supabase.createClient(APP.url, APP.key);
+    const code = new URLSearchParams(location.search).get('t');
+
+    if (!code) {
+      message.textContent = 'กรุณาสแกน QR Code เพื่อติดตามสินค้า';
+      return;
+    }
+
+    message.textContent = 'กำลังค้นหาข้อมูลสินค้า...';
+
+    const { data, error } = await db.rpc('track', { code });
+
+    if (error) throw error;
+
+    if (!data) {
+      message.textContent = 'ไม่พบข้อมูลสินค้าสำหรับรหัสนี้';
+      return;
+    }
+
+    render(data);
+  } catch (error) {
+    console.error(error);
+    message.textContent = 'เกิดข้อผิดพลาด: ' + error.message;
+  }
+}
+
+start();
+</script>
+</body>
+</html>
