@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex">
 <title>พนักงาน | FREEDMILL</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 <header class="hero" style="padding-bottom:64px"><div class="wrap">
@@ -48,11 +48,20 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js"></script>
+<script src="app.js?v=3"></script>
 <script>
 const $ = id => document.getElementById(id);
 let cur = null, sc = null;
 const say = t => { $("msg").textContent = t || ""; };
+function explain(err) {
+  const m = (err && err.message) || String(err);
+  if (err && err.code === "23505") return "Invoice No. นี้มีอยู่แล้ว ใช้เลขอื่น หรือเปิดรายการเดิมจากรายการล่าสุด";
+  if (/row-level security|permission denied|JWT/i.test(m)) return "สิทธิ์ไม่พอหรือล็อกอินหมดอายุ กรุณาออกจากระบบแล้วเข้าสู่ระบบใหม่ (" + m + ")";
+  if (/failed to fetch|network/i.test(m)) return "เชื่อมต่ออินเทอร์เน็ตไม่ได้ ลองใหม่อีกครั้ง";
+  return "ไม่สำเร็จ: " + m;
+}
+window.addEventListener("error", e => say("เกิดข้อผิดพลาดในหน้าเว็บ: " + e.message));
+window.addEventListener("unhandledrejection", e => say("เกิดข้อผิดพลาด: " + ((e.reason && e.reason.message) || e.reason)));
 
 // ฟอร์มสร้างรายการ: [คอลัมน์, ชื่อช่อง, ค่าเริ่มต้น, ชนิด]
 const FIELDS = [
@@ -68,7 +77,7 @@ const FIELDS = [
 $("nf").innerHTML = FIELDS.map(f => `<label ${f[4] ? 'class="w"' : ""}>${f[1]}<input name="${f[0]}" value="${f[2] || ""}" type="${f[3] || "text"}" ${f[3] === "number" ? 'step="0.01"' : ""} ${String(f[1]).includes("*") ? "required" : ""}></label>`).join("") +
   `<label class="w">ผู้ส่ง (Shipper)<textarea name="shipper" rows="2">BIG GOLD AGRO CO., LTD.\nBANGKOK, THAILAND</textarea></label>
    <label class="w">ผู้รับ (Consignee)<textarea name="consignee" rows="2"></textarea></label>
-   <div class="w"><button>สร้างรายการและใบปะหน้า</button></div>`;
+   <div class="w"><button>สร้างรายการและใบปะหน้า</button></div><div class="w msg" id="nmsg"></div>`;
 $("tg").onclick = () => { $("nf").hidden = !$("nf").hidden; };
 
 function gate(on) { $("login").hidden = on; $("app").hidden = !on; $("lo").hidden = !on; if (on) loadList(); }
@@ -83,16 +92,16 @@ $("lf").onsubmit = async e => {
 $("lo").onclick = async () => { await db.auth.signOut(); cur = null; $("cur").innerHTML = ""; gate(false); };
 
 async function loadList() {
-  const { data, error } = await db.from("shipments").select("id,invoice_no,status,created_at").order("created_at", { ascending: false }).limit(30);
+  const { data, error } = await db.from("shipments").select("id,invoice_no,pkg_no,description,status,created_at").order("created_at", { ascending: false }).limit(30);
   if (error) { $("list").innerHTML = `<p class="msg">โหลดรายการไม่ได้: ${esc(error.message)}</p>`; return; }
-  $("list").innerHTML = (data || []).map(s => `<div class="row"><div><b>${esc(s.invoice_no)}</b><small>${esc(s.status)} · ${when(s.created_at)}</small></div><button class="ghost" data-id="${s.id}">เปิด</button></div>`).join("") || `<p class="msg">ยังไม่มีรายการ</p>`;
+  $("list").innerHTML = (data || []).map(s => `<div class="row"><div><b>${esc(s.invoice_no)}</b> · แพ็กเกจ ${esc(s.pkg_no)}<small>${esc(s.description)} · ${esc(s.status)} · ${when(s.created_at)}</small></div><button class="ghost" data-id="${s.id}">เปิด</button></div>`).join("") || `<p class="msg">ยังไม่มีรายการ</p>`;
 }
 $("list").onclick = e => { const id = e.target.dataset.id; if (id) pick("id", id); };
 
 async function pick(col, val) {
   say("กำลังค้นหา…");
   const { data: s, error } = await db.from("shipments").select("*").eq(col, val).maybeSingle();
-  if (error || !s) { say("ไม่พบรายการนี้"); return; }
+  if (error || !s) { say(error ? explain(error) : "ไม่พบรายการนี้"); return; }
   const { data: ev } = await db.from("shipment_events").select("title,place,created_at").eq("shipment_id", s.id).order("created_at", { ascending: false });
   s.events = (ev || []).map(e => ({ title: e.title, place: e.place, at: e.created_at }));
   cur = s; say(""); renderCur();
@@ -102,7 +111,7 @@ async function pick(col, val) {
 function renderCur() {
   const s = cur; window.CUR = s;
   $("cur").innerHTML = `<section class="card" style="margin-top:14px">
-  <div class="top"><div><div class="no">Invoice No. ${esc(s.invoice_no)}</div><div class="status">${esc(s.status)}</div></div></div>
+  <div class="top"><div><div class="no">Invoice No. ${esc(s.invoice_no)}</div><div class="status">${esc(s.status)}</div></div><button type="button" class="ghost" id="cp">ทำสำเนาเป็นใบใหม่</button></div>
   <form id="uf" class="fg" style="margin-top:14px">
   <label>สถานะใหม่<select name="step">${STAGES.map((t, i) => `<option value="${i}" ${i === s.step ? "selected" : ""}>${t}</option>`).join("")}</select></label>
   <label>สถานที่<input name="place" placeholder="เช่น แหลมฉบัง, ชลบุรี"></label>
@@ -112,26 +121,45 @@ function renderCur() {
   <div class="msg" id="umsg"></div></section>
   <section class="card" style="margin-top:14px"><div class="hd"><h2>ใบปะหน้า</h2><span><button class="ghost" onclick="printCur('a5')">พิมพ์ A5</button> <button class="ghost" onclick="printCur('label')">พิมพ์ 10×15 ซม.</button></span></div><div class="lw">${label(s)}</div></section>
   <section class="card" style="margin-top:14px"><h2>ประวัติ</h2>${evHtml(s.events)}</section>`;
+  $("cp").onclick = () => {
+    const f = $("nf"); f.hidden = false;
+    FIELDS.concat([["shipper"], ["consignee"]]).forEach(x => { const i = f.elements[x[0]]; if (i) i.value = s[x[0]] == null ? "" : s[x[0]]; });
+    f.elements.pkg_no.value = "";
+    $("nmsg").textContent = "คัดลอกข้อมูลมาแล้ว ใส่ Package No. ใบใหม่ (เช่น 2 / 2) แล้วกดสร้าง";
+    f.scrollIntoView({ behavior: "smooth" }); f.elements.pkg_no.focus();
+  };
   $("uf").onsubmit = async e => {
     e.preventDefault();
-    const f = new FormData(e.target), step = +f.get("step"), note = (f.get("note") || "").trim();
-    const title = STAGES[step] + (note ? " – " + note : "");
-    const r1 = await db.from("shipment_events").insert({ shipment_id: s.id, title, place: (f.get("place") || "").trim() || null });
-    const r2 = await db.from("shipments").update({ status: STAGES[step], step, eta: (f.get("eta") || "").trim() || null }).eq("id", s.id);
-    if (r1.error || r2.error) { $("umsg").textContent = "บันทึกไม่สำเร็จ: " + (r1.error || r2.error).message; return; }
-    await pick("id", s.id); loadList();
+    const btn = e.target.querySelector("button"), um = $("umsg");
+    btn.disabled = true; um.textContent = "กำลังบันทึก…";
+    try {
+      const f = new FormData(e.target), step = +f.get("step"), note = (f.get("note") || "").trim();
+      const title = STAGES[step] + (note ? " – " + note : "");
+      const r1 = await db.from("shipment_events").insert({ shipment_id: s.id, title, place: (f.get("place") || "").trim() || null });
+      if (r1.error) throw r1.error;
+      const r2 = await db.from("shipments").update({ status: STAGES[step], step, eta: (f.get("eta") || "").trim() || null }).eq("id", s.id);
+      if (r2.error) throw r2.error;
+      await pick("id", s.id); loadList();
+    } catch (err) { um.textContent = explain(err); btn.disabled = false; }
   };
 }
 
 $("nf").onsubmit = async e => {
   e.preventDefault();
-  const row = {};
-  new FormData(e.target).forEach((v, k) => { v = String(v).trim(); row[k] = v === "" ? null : v; });
-  ["nw", "gw"].forEach(k => { if (row[k] != null) row[k] = Number(row[k]); });
-  const { data, error } = await db.from("shipments").insert(row).select().single();
-  if (error) { say("สร้างรายการไม่สำเร็จ: " + error.message); return; }
-  await db.from("shipment_events").insert({ shipment_id: data.id, title: STAGES[0] });
-  e.target.reset(); e.target.hidden = true; loadList(); pick("id", data.id);
+  const form = e.target, btn = form.querySelector("button"), nm = $("nmsg");
+  btn.disabled = true; nm.textContent = "กำลังสร้างรายการ…";
+  try {
+    const row = {};
+    new FormData(form).forEach((v, k) => { v = String(v).trim(); row[k] = v === "" ? null : v; });
+    ["nw", "gw"].forEach(k => { if (row[k] != null) row[k] = Number(row[k]); });
+    const { data, error } = await db.from("shipments").insert(row).select().single();
+    if (error) throw error;
+    const r2 = await db.from("shipment_events").insert({ shipment_id: data.id, title: STAGES[0] });
+    if (r2.error) throw r2.error;
+    form.reset(); form.hidden = true; nm.textContent = "";
+    await loadList(); await pick("id", data.id);
+  } catch (err) { nm.textContent = explain(err); }
+  finally { btn.disabled = false; }
 };
 
 $("cf").onsubmit = e => { e.preventDefault(); const c = codeFrom($("code").value); if (c) pick("public_code", c); };
